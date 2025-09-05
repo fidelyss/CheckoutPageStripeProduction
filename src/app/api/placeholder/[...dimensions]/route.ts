@@ -1,18 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { dimensions: string[] } }
-) {
+  context: { params: Promise<{ dimensions: string[] }> }
+): Promise<NextResponse> {
   try {
-    const [width = '300', height = '200'] = params.dimensions
+    const { dimensions } = await context.params;
+    const [width = '300', height = '200'] = dimensions;
 
-    const widthNum = parseInt(width, 10) || 300
-    const heightNum = parseInt(height, 10) || 200
+    const widthNum = parseInt(width, 10) || 300;
+    const heightNum = parseInt(height, 10) || 200;
 
     // Limitar dimensões para evitar abuso
-    const maxWidth = Math.min(widthNum, 1200)
-    const maxHeight = Math.min(heightNum, 800)
+    const maxWidth = Math.min(widthNum, 1200);
+    const maxHeight = Math.min(heightNum, 800);
 
     const svg = `
       <svg width="${maxWidth}" height="${maxHeight}" xmlns="http://www.w3.org/2000/svg">
@@ -25,21 +26,20 @@ export async function GET(
           ${maxWidth} × ${maxHeight}
         </text>
       </svg>
-    `
+    `;
 
     return new NextResponse(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
-    })
+    });
   } catch (error) {
-    console.error('Erro ao gerar placeholder:', error)
-    
+    console.error('Erro ao gerar placeholder:', error);
+
     return NextResponse.json(
       { error: 'Erro ao gerar imagem' },
       { status: 500 }
-    )
+    );
   }
 }
-
