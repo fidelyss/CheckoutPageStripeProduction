@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // ✅ Validação com Zod
     const validationResult = createPaymentIntentSchema.safeParse(body)
     if (!validationResult.success) {
-      console.error('VALIDATION ERRORS:', validationResult.error.errors)
+      console.error('VALIDATION ERRORS:', validationResult.error.issues)
 
       securityLogger.logInvalidRequest(
         ip,
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Dados inválidos',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       )
