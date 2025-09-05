@@ -3,10 +3,7 @@ import Stripe from 'stripe'
 import { createPaymentIntentSchema, detectInjection } from '@/lib/validation'
 import { securityLogger, getClientIP } from '@/lib/security-logger'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-});
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
   const userAgent = request.headers.get('user-agent') || undefined
