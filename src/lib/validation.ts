@@ -12,7 +12,6 @@ export const createPaymentIntentSchema = z.object({
     .max(3, 'Código da moeda deve ter 3 caracteres')
     .regex(/^[a-zA-Z]{3}$/, 'Código da moeda deve conter apenas letras'),
 
-  metadata: z.record(z.string()).optional()
 });
 
 
