@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Schema para validação de PaymentIntent
 export const createPaymentIntentSchema = z.object({
   amount: z.number()
-    .int('Valor deve ser um número inteiro')
+    .int()
     .min(50, 'Valor mínimo é R$ 0,50')
     .max(100000000, 'Valor máximo é R$ 1.000.000'),
 
@@ -12,8 +12,9 @@ export const createPaymentIntentSchema = z.object({
     .max(3, 'Código da moeda deve ter 3 caracteres')
     .regex(/^[a-zA-Z]{3}$/, 'Código da moeda deve conter apenas letras'),
 
-  metadata: z.record(z.string()).optional(),
-})
+  metadata: z.record(z.string()).optional()
+});
+
 
 // Schema para validação de webhook
 export const verifyPaymentSchema = z.object({
