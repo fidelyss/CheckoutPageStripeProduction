@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { amount, currency, metadata } = validationResult.data
+    const { amount, currency } = validationResult.data
     const finalAmount = Math.round(amount)
 
     if (finalAmount <= 0) {
@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
         integration_check: 'accept_a_payment',
         created_at: new Date().toISOString(),
         client_ip: ip,
-        ...metadata,
       },
     })
 
