@@ -50,26 +50,25 @@ export function middleware(request: NextRequest) {
   )
 
   // Obter IP do cliente
-  const ip = request.ip || 
-    request.headers.get('x-forwarded-for')?.split(',')[0] || 
-    request.headers.get('x-real-ip') || 
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+    request.headers.get('x-real-ip') ||
     '127.0.0.1'
 
   const pathname = request.nextUrl.pathname
 
   // Rate limiting para APIs sensíveis
   if (pathname.startsWith('/api/')) {
-    const maxRequests = pathname.includes('payment') || pathname.includes('webhook') 
-      ? RATE_LIMIT.apiMaxRequests 
+    const maxRequests = pathname.includes('payment') || pathname.includes('webhook')
+      ? RATE_LIMIT.apiMaxRequests
       : RATE_LIMIT.maxRequests
 
     if (isRateLimited(ip, pathname, maxRequests)) {
       return NextResponse.json(
-        { 
+        {
           error: 'Muitas tentativas. Tente novamente mais tarde.',
           retryAfter: Math.ceil(RATE_LIMIT.windowMs / 1000)
         },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': Math.ceil(RATE_LIMIT.windowMs / 1000).toString(),
