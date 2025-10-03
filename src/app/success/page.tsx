@@ -1,19 +1,19 @@
 'use client';
 export const dynamic = "force-dynamic"
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle, Download, Mail, Home } from 'lucide-react'
 
-export default function SuccessPage() {
+function SuccessPageContent() {
   const searchParams = useSearchParams()
   const [paymentStatus, setPaymentStatus] = useState<'loading' | 'succeeded' | 'failed'>('loading')
   const [paymentIntent, setPaymentIntent] = useState<any>(null)
 
   useEffect(() => {
     const clientSecret = searchParams.get('payment_intent_client_secret')
-    
+
     if (clientSecret) {
       // Verificar status do pagamento
       fetch('/api/verify-payment', {
@@ -167,7 +167,7 @@ export default function SuccessPage() {
               <Download className="mr-2 h-5 w-5" />
               Baixar Produto
             </button>
-            
+
             <Link
               href="/"
               className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
@@ -192,3 +192,10 @@ export default function SuccessPage() {
   )
 }
 
+export default function SuccessPageCon() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <SuccessPageContent />
+    </Suspense>
+  )
+}
