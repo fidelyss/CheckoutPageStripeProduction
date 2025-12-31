@@ -154,7 +154,7 @@ function SuccessPageContent() {
                 <div>
                   <p className="font-medium text-blue-900">Download do Produto</p>
                   <p className="text-blue-700 text-sm">
-                    O link para download estará disponível no e-mail de confirmação.
+                    O link para download estará disponível abaixo.
                   </p>
                 </div>
               </div>
@@ -163,10 +163,14 @@ function SuccessPageContent() {
 
           {/* Ações */}
           <div className="space-y-4">
-            <button className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center">
+            <a
+              href="/ebook.pdf"
+              download
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+            >
               <Download className="mr-2 h-5 w-5" />
               Baixar Produto
-            </button>
+            </a>
 
             <Link
               href="/"

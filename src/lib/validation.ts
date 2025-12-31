@@ -1,59 +1,89 @@
 import { z } from 'zod'
 
-// Schema para validação de PaymentIntent
-export const createPaymentIntentSchema = z.object({
-  amount: z.number()
-    .int()
-    .min(50, 'Valor mínimo é R$ 0,50')
-    .max(100000000, 'Valor máximo é R$ 1.000.000'),
+/* ------------------------------------------------------------------
+ * CONFIGURAÇÃO DE PREÇO E CÂMBIO
+ * ------------------------------------------------------------------ */
 
-  currency: z.string()
-    .min(3, 'Código da moeda deve ter 3 caracteres')
-    .max(3, 'Código da moeda deve ter 3 caracteres')
-    .regex(/^[a-zA-Z]{3}$/, 'Código da moeda deve conter apenas letras'),
+// Preço base do produto (USD)
+export const BASE_PRICE_USD = 8
 
-});
+// Cotações fixas (USD como base)
+// ⚠️ depois você pode trocar por API real
+export const EXCHANGE_RATES = {
+  usd: 1,
+  brl: 5.57,
+  eur: 0.92,
+  gbp: 0.79,
+} as const
 
+export type SupportedCurrency = keyof typeof EXCHANGE_RATES
 
-// Schema para validação de webhook
+/* ------------------------------------------------------------------
+ * SCHEMA DE CRIAÇÃO DO PAYMENT INTENT
+ * ------------------------------------------------------------------ */
+
+// Frontend envia APENAS a moeda
+export const createPaymentIntentSchema = z
+  .object({
+    currency: z.enum(['usd', 'brl', 'eur', 'gbp']),
+  })
+  .transform((data) => {
+    const rate = EXCHANGE_RATES[data.currency]
+
+    // Converte USD → moeda escolhida
+    const convertedValue = BASE_PRICE_USD * rate
+
+    // Stripe trabalha com centavos
+    const amountInCents = Math.round(convertedValue * 100)
+
+    return {
+      currency: data.currency,
+      amount: amountInCents,
+      basePriceUsd: BASE_PRICE_USD,
+      exchangeRate: rate,
+    }
+  })
+
+/* ------------------------------------------------------------------
+ * SCHEMA PARA VALIDAÇÃO DE WEBHOOK
+ * ------------------------------------------------------------------ */
+
 export const verifyPaymentSchema = z.object({
   client_secret: z.string()
     .min(1, 'Client secret é obrigatório')
     .regex(/^pi_[a-zA-Z0-9]+_secret_[a-zA-Z0-9]+$/, 'Formato de client secret inválido'),
 })
 
-// Função para sanitizar strings
+/* ------------------------------------------------------------------
+ * FUNÇÕES DE SEGURANÇA (MANTIDAS)
+ * ------------------------------------------------------------------ */
+
+// Sanitização de strings
 export function sanitizeString(input: string): string {
   return input
     .trim()
-    .replace(/[<>\"'&]/g, '') // Remove caracteres perigosos
-    .substring(0, 1000) // Limita tamanho
+    .replace(/[<>\"'&]/g, '')
+    .substring(0, 1000)
 }
 
-// Função para validar e sanitizar e-mail
+// Validação de e-mail
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email) && email.length <= 254
 }
 
-// Função para validar CPF (formato brasileiro)
+// Validação de CPF
 export function validateCPF(cpf: string): boolean {
-  // Remove caracteres não numéricos
   const cleanCPF = cpf.replace(/[^\d]/g, '')
-
-  // Verifica se tem 11 dígitos
   if (cleanCPF.length !== 11) return false
-
-  // Verifica se todos os dígitos são iguais
   if (/^(\d)\1{10}$/.test(cleanCPF)) return false
 
-  // Validação dos dígitos verificadores
   let sum = 0
   for (let i = 0; i < 9; i++) {
     sum += parseInt(cleanCPF.charAt(i)) * (10 - i)
   }
   let remainder = (sum * 10) % 11
-  if (remainder === 10 || remainder === 11) remainder = 0
+  remainder = remainder === 10 ? 0 : remainder
   if (remainder !== parseInt(cleanCPF.charAt(9))) return false
 
   sum = 0
@@ -61,24 +91,18 @@ export function validateCPF(cpf: string): boolean {
     sum += parseInt(cleanCPF.charAt(i)) * (11 - i)
   }
   remainder = (sum * 10) % 11
-  if (remainder === 10 || remainder === 11) remainder = 0
+  remainder = remainder === 10 ? 0 : remainder
   if (remainder !== parseInt(cleanCPF.charAt(10))) return false
 
   return true
 }
 
-// Função para validar CNPJ (formato brasileiro)
+// Validação de CNPJ
 export function validateCNPJ(cnpj: string): boolean {
-  // Remove caracteres não numéricos
   const cleanCNPJ = cnpj.replace(/[^\d]/g, '')
-
-  // Verifica se tem 14 dígitos
   if (cleanCNPJ.length !== 14) return false
-
-  // Verifica se todos os dígitos são iguais
   if (/^(\d)\1{13}$/.test(cleanCNPJ)) return false
 
-  // Validação dos dígitos verificadores
   let length = cleanCNPJ.length - 2
   let numbers = cleanCNPJ.substring(0, length)
   const digits = cleanCNPJ.substring(length)
@@ -93,7 +117,7 @@ export function validateCNPJ(cnpj: string): boolean {
   let result = sum % 11 < 2 ? 0 : 11 - (sum % 11)
   if (result !== parseInt(digits.charAt(0))) return false
 
-  length = length + 1
+  length++
   numbers = cleanCNPJ.substring(0, length)
   sum = 0
   pos = length - 7
@@ -109,31 +133,21 @@ export function validateCNPJ(cnpj: string): boolean {
   return true
 }
 
-// Função para validar número de telefone brasileiro
+// Validação de telefone brasileiro
 export function validateBrazilianPhone(phone: string): boolean {
-  // Remove caracteres não numéricos
   const cleanPhone = phone.replace(/[^\d]/g, '')
-
-  // Verifica se tem 10 ou 11 dígitos (com DDD)
   if (cleanPhone.length < 10 || cleanPhone.length > 11) return false
-
-  // Verifica se o DDD é válido (11-99)
   const ddd = parseInt(cleanPhone.substring(0, 2))
-  if (ddd < 11 || ddd > 99) return false
-
-  return true
+  return ddd >= 11 && ddd <= 99
 }
 
-// Função para validar CEP brasileiro
+// Validação de CEP
 export function validateCEP(cep: string): boolean {
-  // Remove caracteres não numéricos
   const cleanCEP = cep.replace(/[^\d]/g, '')
-
-  // Verifica se tem 8 dígitos
   return cleanCEP.length === 8 && /^\d{8}$/.test(cleanCEP)
 }
 
-// Função para detectar tentativas de injeção
+// Detecção de injeção
 export function detectInjection(input: string): boolean {
   const injectionPatterns = [
     /<script/i,
@@ -151,13 +165,13 @@ export function detectInjection(input: string): boolean {
   return injectionPatterns.some(pattern => pattern.test(input))
 }
 
-// Função para validar origem da requisição
+// Validação de origem
 export function validateOrigin(origin: string | null, allowedOrigins: string[]): boolean {
   if (!origin) return false
   return allowedOrigins.includes(origin)
 }
 
-// Função para gerar hash seguro
+// Geração de hash seguro
 export async function generateSecureHash(data: string): Promise<string> {
   const encoder = new TextEncoder()
   const dataBuffer = encoder.encode(data)
@@ -165,4 +179,3 @@ export async function generateSecureHash(data: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
-
